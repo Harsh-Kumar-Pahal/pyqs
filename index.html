@@ -188,13 +188,13 @@
 
   const firebaseConfig = {
     apiKey: "AIzaSyA4S8SNuZ1mV6xuCGbv4S7EqlI3kom6UGA",
-  authDomain: "xbeat-95bb8.firebaseapp.com",
-  databaseURL: "https://xbeat-95bb8-default-rtdb.firebaseio.com",
-  projectId: "xbeat-95bb8",
-  storageBucket: "xbeat-95bb8.appspot.com",
-  messagingSenderId: "753774332302",
-  appId: "1:753774332302:web:6dbc62e555d89b16967cdf",
-  measurementId: "G-9NQ3XZQ527"
+    authDomain: "xbeat-95bb8.firebaseapp.com",
+    databaseURL: "https://xbeat-95bb8-default-rtdb.firebaseio.com",
+    projectId: "xbeat-95bb8",
+    storageBucket: "xbeat-95bb8.appspot.com",
+    messagingSenderId: "753774332302",
+    appId: "1:753774332302:web:6dbc62e555d89b16967cdf",
+    measurementId: "G-9NQ3XZQ527"
   };
 
   const app = initializeApp(firebaseConfig);
@@ -229,23 +229,50 @@
     );
   }
 
-  // Try to get location, then save
+  // Try to get precise location
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         userData.location = {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
+          accuracy: "precise"
         };
         saveUserData(userData);
       },
       (error) => {
         console.warn("Geolocation failed or denied:", error.message);
-        saveUserData(userData); // save without location
+        // Fallback to approximate location
+        fetch("https://ipapi.co/json/")
+          .then(response => response.json())
+          .then(data => {
+            userData.location = {
+              lat: parseFloat(data.latitude),
+              lng: parseFloat(data.longitude),
+              accuracy: "approximate"
+            };
+            saveUserData(userData);
+          })
+          .catch(() => {
+            saveUserData(userData); // save without location
+          });
       }
     );
   } else {
-    saveUserData(userData); // no geolocation support
+    // Fallback to approximate location
+    fetch("https://ipapi.co/json/")
+      .then(response => response.json())
+      .then(data => {
+        userData.location = {
+          lat: parseFloat(data.latitude),
+          lng: parseFloat(data.longitude),
+          accuracy: "approximate"
+        };
+        saveUserData(userData);
+      })
+      .catch(() => {
+        saveUserData(userData); // save without location
+      });
   }
 
   // Track clicks and update Firebase
